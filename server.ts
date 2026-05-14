@@ -39,12 +39,13 @@ async function startServer() {
 
   app.post("/api/nutrition/text", checkAI, async (req, res) => {
     const { query } = req.body;
+    console.log("Analyzing text nutrition for:", query);
     try {
       const response = await ai!.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `נתח את תיאור המזון הבא בעברית: "${query}". הערך את הערכים התזונתיים לכל המנה המתוארת.`,
         config: {
-          systemInstruction: "נתח את המזון וספק הערכות תזונתיות. אם התיאור עמום, השתמש במנות סטנדרטיות. אם אינך יודע מה המזון, החזר 0 בערכים המספריים אך ספק שם בעברית.",
+          systemInstruction: "נתח את המזון וספק הערכות תזונתיות. חשוב: תמיד ספק שם למזון בשדה 'name' (למשל, חזור על תיאור המשתמש אם אינך בטוח). אם התיאור עמום, השתמש במנות סטנדרטיות. אם אינך יודע מה המזון בכלל, החזר 0 בערכים המספריים אך וודא ששדה ה-'name' אינו ריק.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -60,7 +61,9 @@ async function startServer() {
         },
       });
 
-      res.json(JSON.parse(response.text));
+      console.log("AI Text Raw Response:", response.text);
+      const data = JSON.parse(response.text);
+      res.json(data);
     } catch (error) {
       console.error("AI Text Error:", error);
       res.status(500).json({ error: "Failed to analyze text" });

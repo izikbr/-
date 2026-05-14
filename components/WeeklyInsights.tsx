@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { FoodItem } from '../types';
 import Card from './common/Card';
 import Spinner from './common/Spinner';
@@ -7,11 +6,10 @@ import { getWeeklyInsights } from '../services/apiService';
 import dayjs from 'dayjs';
 
 interface WeeklyInsightsProps {
-    ai: GoogleGenAI;
     foodLog: FoodItem[];
 }
 
-const WeeklyInsights: React.FC<WeeklyInsightsProps> = ({ ai, foodLog }) => {
+const WeeklyInsights: React.FC<WeeklyInsightsProps> = ({ foodLog }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [insight, setInsight] = useState('');
     const [error, setError] = useState('');
@@ -47,7 +45,7 @@ const WeeklyInsights: React.FC<WeeklyInsightsProps> = ({ ai, foodLog }) => {
                 - סה"כ שומן: ${Math.round(totalFat)} גרם
             `;
 
-            const result = await getWeeklyInsights(ai, summary);
+            const result = await getWeeklyInsights(summary);
             setInsight(result);
 
         } catch (err) {

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { FoodItem } from '../types';
 import Card from './common/Card';
 import Spinner from './common/Spinner';
@@ -9,11 +8,9 @@ interface ManualLogModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLog: (items: Omit<FoodItem, 'id'>[]) => void;
-  ai: GoogleGenAI;
 }
 
-// FIX: Implemented the ManualLogModal component for analyzing food from text input.
-const ManualLogModal: React.FC<ManualLogModalProps> = ({ isOpen, onClose, onLog, ai }) => {
+const ManualLogModal: React.FC<ManualLogModalProps> = ({ isOpen, onClose, onLog }) => {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +32,7 @@ const ManualLogModal: React.FC<ManualLogModalProps> = ({ isOpen, onClose, onLog,
     setIsLoading(true);
     setError(null);
     try {
-      const foodItem = await getNutritionInfoFromText(ai, query);
+      const foodItem = await getNutritionInfoFromText(query);
       if (foodItem && (foodItem.calories > 0 || foodItem.name)) {
         setPreviewItem(foodItem);
       } else {

@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import Card from './common/Card';
 import Spinner from './common/Spinner';
 import { getMealSuggestions } from '../services/apiService';
 
 interface MealPlannerProps {
-    ai: GoogleGenAI;
 }
 
-const MealPlanner: React.FC<MealPlannerProps> = ({ ai }) => {
+const MealPlanner: React.FC<MealPlannerProps> = () => {
     const [query, setQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState('');
@@ -23,7 +21,7 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ ai }) => {
         setResult('');
 
         try {
-            const suggestions = await getMealSuggestions(ai, query);
+            const suggestions = await getMealSuggestions(query);
             setResult(suggestions);
         } catch (err) {
             setError('אירעה שגיאה בקבלת הצעות. נסה שוב.');

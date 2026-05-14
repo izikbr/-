@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { FoodItem } from '../types';
 import Card from './common/Card';
 import Spinner from './common/Spinner';
@@ -9,11 +8,9 @@ interface ImageLogModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLog: (items: Omit<FoodItem, 'id'>[]) => void;
-  ai: GoogleGenAI;
 }
 
-// FIX: Implemented the ImageLogModal component for analyzing food from an image.
-const ImageLogModal: React.FC<ImageLogModalProps> = ({ isOpen, onClose, onLog, ai }) => {
+const ImageLogModal: React.FC<ImageLogModalProps> = ({ isOpen, onClose, onLog }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +53,7 @@ const ImageLogModal: React.FC<ImageLogModalProps> = ({ isOpen, onClose, onLog, a
     setIsLoading(true);
     setError(null);
     try {
-      const foodItems = await getFoodFromImage(ai, imageFile);
+      const foodItems = await getFoodFromImage(imageFile);
       if (foodItems.length > 0) {
         onLog(foodItems);
         handleClose();

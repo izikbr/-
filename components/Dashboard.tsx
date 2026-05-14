@@ -1,7 +1,6 @@
 
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile, FoodItem, Gender, Goal, WeightEntry, Achievement } from '../types';
 import { ACTIVITY_FACTORS, GOAL_ADJUSTMENTS } from '../constants';
@@ -28,7 +27,6 @@ interface DashboardProps {
   onUpdateFoodLog: (foodLog: FoodItem[]) => void;
   onUpdateFastingLog: (fastingLog: FastingEntry[]) => void;
   onAddWeight: (date: string, weight: number) => void;
-  ai: GoogleGenAI;
 }
 
 const formatDateDisplay = (dateStr: string) => {
@@ -46,7 +44,7 @@ const formatDateDisplay = (dateStr: string) => {
     return new Intl.DateTimeFormat('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onUpdateFoodLog, onUpdateFastingLog, onAddWeight, ai }) => {
+const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onUpdateFoodLog, onUpdateFastingLog, onAddWeight }) => {
   const [activeModal, setActiveModal] = useState<null | 'image' | 'manual' | 'updateProfile' | 'updateTimeline' | 'editFoodItem' | 'fasting'>(null);
   const [editingFoodItem, setEditingFoodItem] = useState<FoodItem | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -532,11 +530,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
           onDelete={handleDeleteFasting}
           onAdd={() => setActiveModal('fasting')}
         />
-        <MealPlanner ai={ai} />
+        <MealPlanner />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <WeeklyInsights ai={ai} foodLog={userProfile.foodLog || []} />
+        <WeeklyInsights foodLog={userProfile.foodLog || []} />
         <Achievements all={allAchievements} unlocked={unlockedAchievements} />
       </div>
 
@@ -545,8 +543,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
       </Card>
 
 
-      <ImageLogModal isOpen={activeModal === 'image'} onClose={() => setActiveModal(null)} onLog={handleLogItems} ai={ai} />
-      <ManualLogModal isOpen={activeModal === 'manual'} onClose={() => setActiveModal(null)} onLog={handleLogItems} ai={ai} />
+      <ImageLogModal isOpen={activeModal === 'image'} onClose={() => setActiveModal(null)} onLog={handleLogItems} />
+      <ManualLogModal isOpen={activeModal === 'manual'} onClose={() => setActiveModal(null)} onLog={handleLogItems} />
       <FastingLogModal isOpen={activeModal === 'fasting'} onClose={() => setActiveModal(null)} onLog={handleLogFasting} />
       <UpdateProfileModal isOpen={activeModal === 'updateProfile'} onClose={() => setActiveModal(null)} onUpdate={onUpdateProfile} userProfile={userProfile} />
       <UpdateGoalTimelineModal isOpen={activeModal === 'updateTimeline'} onClose={() => setActiveModal(null)} onUpdate={onUpdateProfile} userProfile={userProfile} />

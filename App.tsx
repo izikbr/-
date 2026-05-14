@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { UserProfile, FoodItem, WeightEntry, FastingEntry } from './types';
 import useLocalStorage from './hooks/useLocalStorage';
 import { v4 as uuidv4 } from 'uuid';
@@ -15,41 +14,18 @@ const App: React.FC = () => {
   const [activeProfileId, setActiveProfileId] = useLocalStorage<string | null>('calorific-active-profile-id', null);
   const [appState, setAppState] = useState<'LOADING' | 'SELECT_PROFILE' | 'ONBOARDING' | 'DASHBOARD' | 'ERROR'>('LOADING');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [ai, setAi] = useState<GoogleGenAI | null>(null);
-
-  useEffect(() => {
-    // Initialize AI client safely
-    try {
-      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-      if (!apiKey) {
-        throw new Error("מפתח ה-API של Gemini אינו מוגדר. אנא וודא שהגדרת את ה-GEMINI_API_KEY בהגדרות.");
-      }
-      const genAI = new GoogleGenAI({ apiKey });
-      setAi(genAI);
-      setAppState('LOADING');
-    } catch (error) {
-      console.error("Error initializing GoogleGenAI:", error);
-      setErrorMessage(error instanceof Error ? error.message : "אירעה שגיאה באתחול שירות ה-AI.");
-      setAppState('ERROR');
-    }
-  }, []);
 
   const activeProfile = useMemo(() => {
     return allProfiles.find(p => p.id === activeProfileId) || null;
   }, [allProfiles, activeProfileId]);
 
   useEffect(() => {
-    if (appState === 'ERROR' || !ai) {
-      return; // Don't change state if there's an error or AI is not ready
-    }
-
     if (activeProfile) {
       setAppState('DASHBOARD');
-    } else if (appState !== 'ONBOARDING') { // Don't interrupt onboarding
+    } else if (appState !== 'ONBOARDING') {
       setAppState('SELECT_PROFILE');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ai, activeProfile]);
+  }, [activeProfile, appState]);
 
 
   const handleSelectProfile = (id: string) => {
@@ -146,14 +122,13 @@ const App: React.FC = () => {
       case 'ONBOARDING':
         return <Onboarding onComplete={handleOnboardingComplete} />;
       case 'DASHBOARD':
-        if (activeProfile && ai) {
+        if (activeProfile) {
           return <Dashboard 
             userProfile={activeProfile} 
             onUpdateProfile={handleProfileUpdate} 
             onUpdateFoodLog={handleFoodLogUpdate} 
             onUpdateFastingLog={handleFastingLogUpdate}
             onAddWeight={handleAddWeight}
-            ai={ai}
           />;
         }
         // Fallback if state is out of sync

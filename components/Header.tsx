@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Users, User as UserIcon } from 'lucide-react';
+import { LogOut, User as UserIcon } from 'lucide-react';
 import { UserProfile } from '../types';
 
 interface HeaderProps {
@@ -44,10 +44,10 @@ const Header: React.FC<HeaderProps> = ({ userProfile, onLogout }) => {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={onLogout}
-              className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-all"
-              title="חזור לבחירת משתמש"
+              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+              title="התנתק"
             >
-              <Users size={22} />
+              <LogOut size={22} />
             </motion.button>
           </div>
         )}

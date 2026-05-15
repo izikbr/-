@@ -3,6 +3,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'motion/react';
+import { saveFoodEntry, deleteFoodEntry, updateFoodEntry } from '../services/firestoreService';
+import { useAuth } from '../hooks/useAuth';
 import { 
   ChevronRight, 
   ChevronLeft, 
@@ -182,24 +184,28 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
     };
   }, [userProfile.weight, userProfile.targetWeight, userProfile.weightLog, userProfile.goal]);
 
+  const { user } = useAuth();
 
-  const handleLogItems = (items: Omit<FoodItem, 'id'>[]) => {
-    const newItems = items.map(item => ({...item, id: uuidv4(), timestamp: new Date().toISOString() }));
-    const updatedLog = [...(userProfile.foodLog || []), ...newItems];
-    onUpdateFoodLog(updatedLog);
+  const handleLogItems = async (items: Omit<FoodItem, 'id'>[]) => {
+    if (!user) return;
+    for (const item of items) {
+        await saveFoodEntry(user.uid, {
+            ...item,
+            id: '', // Will be set by Firestore
+            timestamp: new Date().toISOString()
+        } as FoodItem);
+    }
   };
   
-  const handleUpdateItem = (updatedItem: FoodItem) => {
-    const updatedLog = (userProfile.foodLog || []).map(item => item.id === updatedItem.id ? updatedItem : item);
-    onUpdateFoodLog(updatedLog);
+  const handleUpdateItem = async (updatedItem: FoodItem) => {
+    await updateFoodEntry(updatedItem.id, updatedItem);
     setEditingFoodItem(null);
     setActiveModal(null);
   };
 
-  const handleDeleteItem = (itemId: string) => {
+  const handleDeleteItem = async (itemId: string) => {
     if (window.confirm("האם אתה בטוח שברצונך למחוק פריט זה?")) {
-        const updatedLog = (userProfile.foodLog || []).filter(item => item.id !== itemId);
-        onUpdateFoodLog(updatedLog);
+        await deleteFoodEntry(itemId);
     }
   };
 

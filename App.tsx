@@ -1,77 +1,103 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { UserProfile, FoodItem, WeightEntry, FastingEntry } from './types';
-import useLocalStorage from './hooks/useLocalStorage';
-import { v4 as uuidv4 } from 'uuid';
+import { UserProfile, FoodItem, WeightEntry, FastingEntry, Gender, ActivityLevel, Goal } from './types';
+import { useAuth } from './hooks/useAuth';
+import { getUserProfile, createUserProfile, updateUserProfile, subscribeToFoodLogs } from './services/firestoreService';
+import { auth } from './lib/firebase';
+import { signOut } from 'firebase/auth';
 
 import Header from './components/Header';
 import Footer from './components/common/Footer';
-import UserSelection from './components/UserSelection';
 import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
+import Login from './components/Login';
 
 const App: React.FC = () => {
-  const [allProfiles, setAllProfiles] = useLocalStorage<UserProfile[]>('calorific-profiles', []);
-  const [activeProfileId, setActiveProfileId] = useLocalStorage<string | null>('calorific-active-profile-id', null);
-  const [appState, setAppState] = useState<'LOADING' | 'SELECT_PROFILE' | 'ONBOARDING' | 'DASHBOARD' | 'ERROR'>('LOADING');
-  const [errorMessage, setErrorMessage] = useState<string>('');
-
-  const activeProfile = useMemo(() => {
-    return allProfiles.find(p => p.id === activeProfileId) || null;
-  }, [allProfiles, activeProfileId]);
+  const { user, loading: authLoading } = useAuth();
+  const [activeProfile, setActiveProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [appState, setAppState] = useState<'LOADING' | 'LOGIN' | 'ONBOARDING' | 'DASHBOARD'>('LOADING');
 
   useEffect(() => {
-    if (activeProfile) {
-      setAppState('DASHBOARD');
-    } else if (appState !== 'ONBOARDING') {
-      setAppState('SELECT_PROFILE');
+    if (authLoading) return;
+
+    if (!user) {
+      setAppState('LOGIN');
+      setActiveProfile(null);
+      return;
     }
-  }, [activeProfile, appState]);
 
-
-  const handleSelectProfile = (id: string) => {
-    setActiveProfileId(id);
-  };
-
-  const handleLogout = () => {
-    setActiveProfileId(null);
-    setAppState('SELECT_PROFILE');
-  };
-
-  const handleNewProfile = () => {
-    setAppState('ONBOARDING');
-  };
-
-  const handleDeleteProfile = (id: string) => {
-    if (window.confirm('האם אתה בטוח שברצונך למחוק פרופיל זה? לא ניתן לשחזר פעולה זו.')) {
-        setAllProfiles(prev => prev.filter(p => p.id !== id));
-        if (activeProfileId === id) {
-            setActiveProfileId(null);
+    const fetchProfile = async () => {
+      setProfileLoading(true);
+      try {
+        const profile = await getUserProfile(user.uid);
+        if (profile) {
+          setActiveProfile(profile);
+          setAppState('DASHBOARD');
+        } else {
+          setAppState('ONBOARDING');
         }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user, authLoading]);
+
+  // Subscribe to food logs separately for real-time updates and better scalability
+  useEffect(() => {
+     if (user && activeProfile) {
+         const unsubscribe = subscribeToFoodLogs(user.uid, (logs) => {
+             setActiveProfile(prev => prev ? { ...prev, foodLog: logs } : null);
+         });
+         return unsubscribe;
+     }
+  }, [user, !!activeProfile]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout error:", error);
     }
   };
 
-  const handleOnboardingComplete = (profileData: Omit<UserProfile, 'id'>) => {
+  const handleOnboardingComplete = async (profileData: Omit<UserProfile, 'id'>) => {
+    if (!user) return;
+    
     const newProfile: UserProfile = {
       ...profileData,
-      id: uuidv4(),
+      id: user.uid,
       foodLog: [],
       weightLog: [{ date: new Date().toISOString().split('T')[0], weight: profileData.weight }],
     };
-    setAllProfiles(prev => [...prev, newProfile]);
-    setActiveProfileId(newProfile.id);
-    setAppState('DASHBOARD');
+
+    try {
+      await createUserProfile(newProfile);
+      setActiveProfile(newProfile);
+      setAppState('DASHBOARD');
+    } catch (error) {
+      console.error("Error creating profile:", error);
+    }
   };
 
-  const handleProfileUpdate = (updatedData: Partial<UserProfile>) => {
-    setAllProfiles(prev => prev.map(p => {
-      if (p.id === activeProfileId) {
-        return { ...p, ...updatedData };
-      }
-      return p;
-    }));
+  const handleProfileUpdate = async (updatedData: Partial<UserProfile>) => {
+    if (!user || !activeProfile) return;
+    
+    try {
+      await updateUserProfile(user.uid, updatedData);
+      setActiveProfile(prev => prev ? { ...prev, ...updatedData } : null);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
   };
 
   const handleFoodLogUpdate = (newFoodLog: FoodItem[]) => {
+      // NOTE: In this implementation, food logs are handled by the specific AI/Manual sub collection later,
+      // but if the UI expects to replace the whole log, we do it here.
+      // For now, I'll update the profile doc, but we should consider a better strategy for large logs.
       handleProfileUpdate({ foodLog: newFoodLog });
   };
 
@@ -79,12 +105,11 @@ const App: React.FC = () => {
     handleProfileUpdate({ fastingLog: newFastingLog });
   };
   
-  const handleAddWeight = (date: string, weight: number) => {
-    const currentProfile = allProfiles.find(p => p.id === activeProfileId);
-    if (!currentProfile) return;
+  const handleAddWeight = async (date: string, weight: number) => {
+    if (!activeProfile || !user) return;
 
     const newLogEntry: WeightEntry = { date, weight };
-    let updatedWeightLog = [...(currentProfile.weightLog || [])];
+    let updatedWeightLog = [...(activeProfile.weightLog || [])];
     
     const existingLogIndex = updatedWeightLog.findIndex(log => log.date === date);
 
@@ -96,29 +121,23 @@ const App: React.FC = () => {
 
     updatedWeightLog.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // Also update the main profile weight if it's for today
     const today = new Date().toISOString().split('T')[0];
-    const newProfileData: Partial<UserProfile> = { weightLog: updatedWeightLog };
+    const update: Partial<UserProfile> = { weightLog: updatedWeightLog };
     if (date === today) {
-      newProfileData.weight = weight;
+        update.weight = weight;
     }
 
-    handleProfileUpdate(newProfileData);
+    await handleProfileUpdate(update);
   };
 
   const renderContent = () => {
+    if (authLoading || profileLoading) {
+        return <div className="text-center p-10"><h1 className="text-xl font-semibold">טוען...</h1></div>;
+    }
+
     switch (appState) {
-      case 'ERROR':
-        return (
-            <div className="text-center p-10">
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
-                    <strong className="font-bold">שגיאת תצורה!</strong>
-                    <span className="block sm:inline ml-2">{errorMessage}</span>
-                </div>
-            </div>
-        );
-      case 'SELECT_PROFILE':
-        return <UserSelection profiles={allProfiles} onSelectProfile={handleSelectProfile} onDeleteProfile={handleDeleteProfile} onNewProfile={handleNewProfile} />;
+      case 'LOGIN':
+        return <Login />;
       case 'ONBOARDING':
         return <Onboarding onComplete={handleOnboardingComplete} />;
       case 'DASHBOARD':
@@ -131,8 +150,6 @@ const App: React.FC = () => {
             onAddWeight={handleAddWeight}
           />;
         }
-        // Fallback if state is out of sync
-        handleLogout();
         return null;
       case 'LOADING':
       default:

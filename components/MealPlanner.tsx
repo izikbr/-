@@ -24,7 +24,7 @@ const MealPlanner: React.FC<MealPlannerProps> = () => {
             const suggestions = await getMealSuggestions(query);
             setResult(suggestions);
         } catch (err) {
-            setError('אירעה שגיאה בקבלת הצעות. נסה שוב.');
+            setError(err instanceof Error ? err.message : 'אירעה שגיאה בקבלת הצעות. נסה שוב.');
         } finally {
             setIsLoading(false);
         }

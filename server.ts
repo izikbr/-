@@ -49,7 +49,7 @@ async function startServer() {
     console.log("Analyzing text nutrition for:", query);
     try {
       const response = await ai!.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "models/gemini-3-flash-preview",
         contents: `נתח את תיאור המזון הבא בעברית: "${query}". הערך את הערכים התזונתיים לכל המנה המתוארת.`,
         config: {
           systemInstruction: "נתח את המזון וספק הערכות תזונתיות. חשוב: תמיד ספק שם למזון בשדה 'name' (למשל, חזור על תיאור המשתמש אם אינך בטוח). אם התיאור עמום, השתמש במנות סטנדרטיות. אם אינך יודע מה המזון בכלל, החזר 0 בערכים המספריים אך וודא ששדה ה-'name' אינו ריק.",
@@ -69,7 +69,18 @@ async function startServer() {
       });
 
       console.log("AI Text Raw Response:", response.text);
-      const data = JSON.parse(response.text);
+      let text = response.text;
+      // Strip markdown code blocks if present
+      if (text.startsWith('```')) {
+        text = text.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+      }
+      const data = JSON.parse(text);
+      
+      // Ensure name is never empty
+      if (!data.name || data.name.trim() === "") {
+        data.name = query;
+      }
+      
       res.json(data);
     } catch (error) {
       console.error("AI Text Error:", error);
@@ -82,7 +93,7 @@ async function startServer() {
 
     try {
       const response = await ai!.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "models/gemini-3-flash-preview",
         contents: {
           parts: [
             { inlineData: { data: req.file.buffer.toString('base64'), mimeType: req.file.mimetype } },
@@ -120,7 +131,7 @@ async function startServer() {
     const { query } = req.body;
     try {
       const response = await ai!.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "models/gemini-3-flash-preview",
         contents: `הצע ארוחות בריאות בהתבסס על הבקשה הבאה: ${query}`,
         config: {
           systemInstruction: "אתה שף ותזונאי יצירתי. ספק 3 הצעות לארוחות בעברית עם רשימת רכיבים והוראות פשוטות. השתמש בפורמט Markdown.",
@@ -136,7 +147,7 @@ async function startServer() {
     const { summary } = req.body;
     try {
       const response = await ai!.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "models/gemini-3-flash-preview",
         contents: `נתח את סיכום יומן המזון של המשתמש ל-7 הימים האחרונים: ${summary}`,
         config: {
           systemInstruction: "אתה מאמן תזונה חיובי ומעודד. ספק תובנה חיובית אחת, אזור אחד לשיפור וטיפ אחד פשוט ובר ביצוע. השב בעברית בפורמט Markdown.",

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { X, Wand2, Check, ArrowRight, Plus } from 'lucide-react';
 import { FoodItem } from '../types';
 import Card from './common/Card';
 import Spinner from './common/Spinner';
@@ -40,7 +42,7 @@ const ManualLogModal: React.FC<ManualLogModalProps> = ({ isOpen, onClose, onLog 
       }
     } catch (err) {
       console.error(err);
-      setError("אירעה שגיאה בקבלת המידע התזונתי. אנא נסה שוב.");
+      setError(err instanceof Error ? err.message : "אירעה שגיאה בקבלת המידע התזונתי. אנא נסה שוב.");
     } finally {
       setIsLoading(false);
     }
@@ -56,78 +58,128 @@ const ManualLogModal: React.FC<ManualLogModalProps> = ({ isOpen, onClose, onLog 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-slate-800">הוספה ידנית</h2>
-            <button onClick={handleClose} className="text-slate-500 hover:text-slate-800 text-2xl leading-none">&times;</button>
-          </div>
-          
-          <div className="space-y-4">
-            {!previewItem ? (
-              <>
-                <label htmlFor="food-query" className="block text-sm font-medium text-slate-600">מה אכלת?</label>
-                <textarea
-                  id="food-query"
-                  rows={4}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="לדוגמה: 2 ביצים מקושקשות, פרוסת לחם מלא עם אבוקדו וסלט ירקות קטן בצד"
-                  className="w-full p-2 border border-slate-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                />
-                {error && <p className="text-red-500 text-sm">{error}</p>}
-                <div className="mt-6 flex justify-end gap-3">
-                  <button type="button" onClick={handleClose} className="px-6 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition">ביטול</button>
-                  <button
-                    type="button"
-                    onClick={handleAnalyze}
-                    disabled={!query.trim() || isLoading}
-                    className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition disabled:bg-slate-400 flex items-center justify-center min-w-[120px]"
-                  >
-                    {isLoading ? <Spinner /> : 'נתח עם AI'}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="bg-primary-50 p-4 rounded-lg border border-primary-100 mb-6">
-                  <p className="text-xs text-primary-600 font-bold uppercase tracking-wider mb-1">ה-AI זיהה:</p>
-                  <p className="text-lg font-bold text-slate-800">{previewItem.name}</p>
-                  <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
-                    <div className="bg-white p-2 rounded shadow-sm">
-                      <span className="text-slate-500">קלוריות:</span> <span className="font-bold">{Math.round(previewItem.calories)}</span>
-                    </div>
-                    <div className="bg-white p-2 rounded shadow-sm">
-                      <span className="text-slate-500">חלבון:</span> <span className="font-bold">{Math.round(previewItem.protein)}g</span>
-                    </div>
-                    <div className="bg-white p-2 rounded shadow-sm">
-                      <span className="text-slate-500">פחמימות:</span> <span className="font-bold">{Math.round(previewItem.carbs)}g</span>
-                    </div>
-                    <div className="bg-white p-2 rounded shadow-sm">
-                      <span className="text-slate-500">שומן:</span> <span className="font-bold">{Math.round(previewItem.fat)}g</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex justify-between gap-3">
-                  <button type="button" onClick={() => setPreviewItem(null)} className="flex-grow px-4 py-2 bg-slate-100 text-slate-600 rounded-md hover:bg-slate-200 transition">
-                    ערוך טקסט
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirmLog}
-                    className="flex-grow px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition font-bold"
-                  >
-                    אשר והוסף
-                  </button>
-                </div>
+    <AnimatePresence>
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="w-full max-w-md"
+        >
+          <Card className="overflow-hidden">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <Plus size={20} className="text-primary-500" /> הוספה ידנית
+                </h2>
+                <motion.button 
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleClose} 
+                  className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+                >
+                  <X size={24} />
+                </motion.button>
               </div>
-            )}
-          </div>
-        </div>
-      </Card>
-    </div>
+              
+              <div className="space-y-4">
+                {!previewItem ? (
+                  <>
+                    <div className="space-y-1.5">
+                      <label htmlFor="food-query" className="block text-sm font-bold text-slate-600">מה אכלת היום?</label>
+                      <textarea
+                        id="food-query"
+                        rows={4}
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="לדוגמה: 2 פרוסות לחם עם חביתה וגבינה..."
+                        className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-lg transition-shadow"
+                      />
+                    </div>
+                    {error && (
+                      <motion.p 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        className="text-red-500 text-sm font-medium bg-red-50 p-2 rounded-lg"
+                      >
+                        {error}
+                      </motion.p>
+                    )}
+                    <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                      <button 
+                        type="button" 
+                        onClick={handleClose} 
+                        className="order-2 sm:order-1 flex-grow h-12 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition"
+                      >
+                        ביטול
+                      </button>
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        type="button"
+                        onClick={handleAnalyze}
+                        disabled={!query.trim() || isLoading}
+                        className="order-1 sm:order-2 flex-grow h-12 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition disabled:bg-slate-400 flex items-center justify-center gap-2"
+                      >
+                        {isLoading ? <Spinner /> : <><Wand2 size={20} /> נתח עם AI</>}
+                      </motion.button>
+                    </div>
+                  </>
+                ) : (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="space-y-6"
+                  >
+                    <div className="bg-primary-50 p-5 rounded-2xl border border-primary-100 shadow-inner">
+                      <p className="text-xs text-primary-600 font-bold uppercase tracking-widest mb-2 flex items-center gap-1">
+                        <Check size={14} /> ה-AI זיהה בהצלחה:
+                      </p>
+                      <p className="text-xl font-bold text-slate-800 mb-4">{previewItem.name}</p>
+                      
+                      <div className="grid grid-cols-2 gap-3 mt-4">
+                        <div className="bg-white/80 backdrop-blur p-3 rounded-xl shadow-sm border border-white">
+                          <p className="text-xs text-slate-500 mb-0.5">קלוריות</p>
+                          <p className="text-lg font-bold text-slate-800">{Math.round(previewItem.calories)}</p>
+                        </div>
+                        <div className="bg-white/80 backdrop-blur p-3 rounded-xl shadow-sm border border-white">
+                          <p className="text-xs text-slate-500 mb-0.5">חלבון</p>
+                          <p className="text-lg font-bold text-slate-800">{Math.round(previewItem.protein)}<span className="text-sm font-normal">g</span></p>
+                        </div>
+                        <div className="bg-white/80 backdrop-blur p-3 rounded-xl shadow-sm border border-white">
+                          <p className="text-xs text-slate-500 mb-0.5">פחמימות</p>
+                          <p className="text-lg font-bold text-slate-800">{Math.round(previewItem.carbs)}<span className="text-sm font-normal">g</span></p>
+                        </div>
+                        <div className="bg-white/80 backdrop-blur p-3 rounded-xl shadow-sm border border-white">
+                          <p className="text-xs text-slate-500 mb-0.5">שומן</p>
+                          <p className="text-lg font-bold text-slate-800">{Math.round(previewItem.fat)}<span className="text-sm font-normal">g</span></p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                      <button 
+                        type="button" 
+                        onClick={() => setPreviewItem(null)} 
+                        className="flex-grow h-12 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition flex items-center justify-center gap-2"
+                      >
+                        <ArrowRight size={18} className="scale-x-[-1]" /> ערוך טקסט
+                      </button>
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        type="button"
+                        onClick={handleConfirmLog}
+                        className="flex-grow h-12 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-200 flex items-center justify-center gap-2"
+                      >
+                        <Check size={20} /> אשר והוסף
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      </div>
+    </AnimatePresence>
   );
 };
 

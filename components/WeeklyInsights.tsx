@@ -49,7 +49,7 @@ const WeeklyInsights: React.FC<WeeklyInsightsProps> = ({ foodLog }) => {
             setInsight(result);
 
         } catch (err) {
-            setError('אירעה שגיאה בהפקת התובנות. נסה שוב.');
+            setError(err instanceof Error ? err.message : 'אירעה שגיאה בהפקת התובנות. נסה שוב.');
         } finally {
             setIsLoading(false);
         }

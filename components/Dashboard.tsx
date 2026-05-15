@@ -2,6 +2,22 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  ChevronRight, 
+  ChevronLeft, 
+  Flame, 
+  Plus, 
+  Camera, 
+  Clock, 
+  Edit2, 
+  Trash2, 
+  UserCircle,
+  TrendingDown,
+  TrendingUp,
+  History,
+  Target
+} from 'lucide-react';
 import { UserProfile, FoodItem, Gender, Goal, WeightEntry, Achievement } from '../types';
 import { ACTIVITY_FACTORS, GOAL_ADJUSTMENTS } from '../constants';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
@@ -299,18 +315,37 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
 
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-          <button onClick={() => handleDateChange('prev')} className="p-2 rounded-full hover:bg-slate-200 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </button>
-          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+    <div className="space-y-6 pb-20 sm:pb-6">
+      <div className="flex justify-between items-center px-1">
+          <motion.button 
+            whileTap={{ scale: 0.9 }}
+            onClick={() => handleDateChange('prev')} 
+            className="p-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition shadow-sm active:shadow-inner"
+          >
+              <ChevronRight size={24} />
+          </motion.button>
+          
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2 text-center">
             {formatDateDisplay(selectedDate)}
-            {streak > 1 && isToday && <span title={`רצף של ${streak} ימים`} className="text-base font-bold text-amber-500 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">🔥 {streak}</span>}
+            {streak > 1 && isToday && (
+              <motion.span 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                title={`רצף של ${streak} ימים`} 
+                className="text-xs sm:text-base font-bold text-amber-500 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1"
+              >
+                <Flame size={14} className="sm:w-4 sm:h-4" /> {streak}
+              </motion.span>
+            )}
           </h2>
-          <button onClick={() => handleDateChange('next')} className="p-2 rounded-full hover:bg-slate-200 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-          </button>
+          
+          <motion.button 
+            whileTap={{ scale: 0.9 }}
+            onClick={() => handleDateChange('next')} 
+            className="p-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition shadow-sm active:shadow-inner"
+          >
+              <ChevronLeft size={24} />
+          </motion.button>
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -363,31 +398,52 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
 
             <Card>
               <div className="p-6">
-                  <h3 className="text-xl font-bold text-slate-800 mb-4">היומן שלי</h3>
+                  <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <History size={20} className="text-primary-500" /> היומן שלי
+                  </h3>
                   {foodLogForSelectedDate.length > 0 ? (
-                      <ul className="space-y-1 -mr-3 -ml-3">
-                        {foodLogForSelectedDate.map(item => (
-                            <li key={item.id} className="group flex items-center gap-4 p-3 hover:bg-slate-100 rounded-md">
-                                <div className="flex-grow">
-                                    <p className="font-semibold text-slate-800">{item.name}</p>
-                                    <p className="text-sm text-slate-500">
-                                        {`${Math.round(item.calories)} קל' | ח': ${Math.round(item.protein)}ג, פ': ${Math.round(item.carbs)}ג, ש': ${Math.round(item.fat)}ג`}
-                                    </p>
-                                </div>
-                                <div className="flex items-center shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                    <button onClick={() => { setEditingFoodItem(item); setActiveModal('editFoodItem'); }} title="ערוך פריט" className="p-2 text-slate-500 hover:text-primary-600 rounded-full hover:bg-slate-200">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                                    </button>
-                                    <button onClick={() => handleDeleteItem(item.id)} title="מחק פריט" className="p-2 text-slate-500 hover:text-red-500 rounded-full hover:bg-slate-200">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                    </button>
-                                </div>
-                            </li>
-                        ))}
+                      <ul className="space-y-1">
+                        <AnimatePresence mode="popLayout">
+                          {foodLogForSelectedDate.map(item => (
+                              <motion.li 
+                                layout
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                key={item.id} 
+                                className="group flex items-center gap-4 p-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
+                              >
+                                  <div className="flex-grow">
+                                      <p className="font-semibold text-slate-800">{item.name}</p>
+                                      <p className="text-sm text-slate-500">
+                                          {`${Math.round(item.calories)} קל' | ח': ${Math.round(item.protein)}ג, פ': ${Math.round(item.carbs)}ג, ש': ${Math.round(item.fat)}ג`}
+                                      </p>
+                                  </div>
+                                  <div className="flex items-center shrink-0 gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <motion.button 
+                                        whileTap={{ scale: 0.9 }}
+                                        onClick={() => { setEditingFoodItem(item); setActiveModal('editFoodItem'); }} 
+                                        title="ערוך פריט" 
+                                        className="p-2.5 text-slate-400 hover:text-primary-600 rounded-full hover:bg-primary-50 bg-slate-50 sm:bg-transparent"
+                                      >
+                                          <Edit2 size={18} />
+                                      </motion.button>
+                                      <motion.button 
+                                        whileTap={{ scale: 0.9 }}
+                                        onClick={() => handleDeleteItem(item.id)} 
+                                        title="מחק פריט" 
+                                        className="p-2.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 bg-slate-50 sm:bg-transparent"
+                                      >
+                                          <Trash2 size={18} />
+                                      </motion.button>
+                                  </div>
+                              </motion.li>
+                          ))}
+                        </AnimatePresence>
                       </ul>
                   ) : (
-                      <div className="text-center text-slate-500 py-8">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-slate-400 mb-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 8v4l2 1"/><path d="M17 12h-1a4 4 0 0 0-4-4V7"/></svg>
+                      <div className="text-center text-slate-500 py-12">
+                        <History size={48} className="mx-auto text-slate-300 mb-2 opacity-50" />
                         <p>היומן להיום ריק.</p>
                       </div>
                   )}
@@ -398,20 +454,34 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
         <div className="space-y-6">
             <Card>
                 <div className="p-6">
-                    <h3 className="text-xl font-bold text-slate-800 mb-4">הוספה ליומן</h3>
-                    <div className="space-y-3">
-                        <button onClick={() => setActiveModal('image')} className="w-full flex items-center gap-3 p-4 bg-slate-100 rounded-lg hover:bg-slate-200 transition text-start">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                            <span className="font-semibold">הוסף מתמונה</span>
-                        </button>
-                        <button onClick={() => setActiveModal('manual')} className="w-full flex items-center gap-3 p-4 bg-slate-100 rounded-lg hover:bg-slate-200 transition text-start">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                            <span className="font-semibold">הוסף ידנית</span>
-                        </button>
-                        <button onClick={() => setActiveModal('fasting')} className="w-full flex items-center gap-3 p-4 bg-primary-100 text-primary-800 rounded-lg hover:bg-primary-200 transition text-start">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                            <span className="font-semibold">דווח צום</span>
-                        </button>
+                    <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <Plus size={20} className="text-primary-500" /> הוספה ליומן
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+                        <motion.button 
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setActiveModal('image')} 
+                          className="flex items-center sm:flex-col justify-center gap-3 sm:gap-2 p-4 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition shadow-sm border border-primary-100"
+                        >
+                            <Camera size={24} />
+                            <span className="font-bold">צילום מזון</span>
+                        </motion.button>
+                        <motion.button 
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setActiveModal('manual')} 
+                          className="flex items-center sm:flex-col justify-center gap-3 sm:gap-2 p-4 bg-slate-50 text-slate-700 rounded-xl hover:bg-slate-100 transition shadow-sm border border-slate-200"
+                        >
+                            <Edit2 size={24} />
+                            <span className="font-bold">הזנה ידנית</span>
+                        </motion.button>
+                        <motion.button 
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setActiveModal('fasting')} 
+                          className="flex items-center sm:flex-col justify-center gap-3 sm:gap-2 p-4 bg-amber-50 text-amber-700 rounded-xl hover:bg-amber-100 transition shadow-sm border border-amber-200"
+                        >
+                            <Clock size={24} />
+                            <span className="font-bold">דיווח צום</span>
+                        </motion.button>
                     </div>
                 </div>
             </Card>
@@ -476,8 +546,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
                           )}
                       </div>
 
-                      <form onSubmit={handleWeightSubmit} className="space-y-2">
-                          <label htmlFor="weight-input" className="font-semibold text-slate-700">
+                      <form onSubmit={handleWeightSubmit} className="space-y-3">
+                          <label htmlFor="weight-input" className="font-semibold text-slate-700 block">
                               {isToday ? 'עדכן משקל יומי' : `הוסף משקל ל-${new Date(selectedDate).toLocaleDateString('he-IL')}`}
                           </label>
                           <div className="flex gap-2">
@@ -488,13 +558,28 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
                                   inputMode="decimal"
                                   value={currentWeightInput}
                                   onChange={(e) => setCurrentWeightInput(e.target.value)}
-                                  placeholder="משקל בק״ג"
-                                  className="flex-grow p-2 border border-slate-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                                  placeholder="ק״ג"
+                                  className="flex-grow p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg outline-none transition-shadow h-12"
                               />
-                              <button type="submit" className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition disabled:bg-slate-400" disabled={!currentWeightInput}>שמור</button>
+                              <motion.button 
+                                whileTap={{ scale: 0.95 }}
+                                type="submit" 
+                                className="px-6 h-12 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition disabled:bg-slate-400 shadow-sm" 
+                                disabled={!currentWeightInput}
+                              >
+                                שמור
+                              </motion.button>
                           </div>
-                          {weightSaved && <p className="text-sm text-green-600">נשמר בהצלחה!</p>}
                       </form>
+                      {weightSaved && (
+                        <motion.p 
+                          initial={{ opacity: 0, y: -10 }} 
+                          animate={{ opacity: 1, y: 0 }} 
+                          className="text-sm text-green-600 font-medium text-center mt-2 px-1"
+                        >
+                          נשמר בהצלחה!
+                        </motion.p>
+                      )}
                   </div>
                   
                   {/* Right side: chart */}

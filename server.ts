@@ -34,6 +34,9 @@ async function startServer() {
     }
   }) : null;
 
+  // API Router
+  const apiRouter = express.Router();
+
   // Middleware to check if AI is initialized
   const checkAI = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (!ai) {
@@ -44,7 +47,7 @@ async function startServer() {
   };
 
   // API Health Checks
-  app.get("/api/health", (req, res) => {
+  apiRouter.get("/health", (req, res) => {
     console.log("[Health Check] API is hit");
     res.json({ 
       status: "ok", 
@@ -54,7 +57,7 @@ async function startServer() {
   });
 
   // Nutrition Text Route
-  app.post("/api/nutrition/text", checkAI, async (req, res) => {
+  apiRouter.post("/nutrition/text", checkAI, async (req, res) => {
     const { query } = req.body;
     console.log(`[AI Nutrition Text] Query: "${query}"`);
     
@@ -94,7 +97,7 @@ async function startServer() {
   });
 
   // Nutrition Image Route
-  app.post("/api/nutrition/image", upload.single('image'), checkAI, async (req, res) => {
+  apiRouter.post("/nutrition/image", upload.single('image'), checkAI, async (req, res) => {
     if (!req.file) {
       console.warn("[AI Nutrition Image] No image uploaded");
       return res.status(400).json({ error: "No image uploaded" });
@@ -141,7 +144,7 @@ async function startServer() {
   });
 
   // Suggestions Route
-  app.post("/api/suggestions", checkAI, async (req, res) => {
+  apiRouter.post("/suggestions", checkAI, async (req, res) => {
     const { query } = req.body;
     console.log(`[AI Suggestions] Request: "${query}"`);
     try {
@@ -160,7 +163,7 @@ async function startServer() {
   });
 
   // Insights Route
-  app.post("/api/insights", checkAI, async (req, res) => {
+  apiRouter.post("/insights", checkAI, async (req, res) => {
     const { summary } = req.body;
     console.log("[AI Insights] Generating insights...");
     try {
@@ -178,12 +181,16 @@ async function startServer() {
     }
   });
 
+  // Mount API Router
+  app.use("/api", apiRouter);
+
   // Catch-all for UNHANDLED API routes
   app.all("/api/*", (req, res) => {
     console.warn(`[404 API] ${req.method} ${req.originalUrl}`);
     res.status(404).json({ 
       error: "API endpoint not found", 
-      path: req.originalUrl
+      path: req.originalUrl,
+      method: req.method
     });
   });
 

@@ -85,30 +85,30 @@ const ManualLogModal: React.FC<ManualLogModalProps> = ({ isOpen, onClose, onLog 
                 {!previewItem ? (
                   <>
                     <div className="space-y-1.5">
-                      <label htmlFor="food-query" className="block text-sm font-bold text-slate-600">מה אכלת היום?</label>
+                      <label htmlFor="food-query" className="block text-sm font-bold text-slate-700 mb-2 px-1">מה אכלת היום?</label>
                       <textarea
                         id="food-query"
                         rows={4}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="לדוגמה: 2 פרוסות לחם עם חביתה וגבינה..."
-                        className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-lg transition-shadow"
+                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:bg-white outline-none text-lg transition-all font-medium placeholder:text-slate-400"
                       />
                     </div>
                     {error && (
-                      <motion.p 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        className="text-red-500 text-sm font-medium bg-red-50 p-2 rounded-lg"
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        className="text-red-600 text-sm font-bold bg-red-50 p-3 border border-red-100 rounded-xl text-center"
                       >
                         {error}
-                      </motion.p>
+                      </motion.div>
                     )}
                     <div className="pt-2 flex flex-col sm:flex-row gap-3">
                       <button 
                         type="button" 
                         onClick={handleClose} 
-                        className="order-2 sm:order-1 flex-grow h-12 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition"
+                        className="order-2 sm:order-1 flex-grow h-14 bg-slate-100 text-slate-700 font-bold rounded-2xl hover:bg-slate-200 transition"
                       >
                         ביטול
                       </button>
@@ -117,7 +117,7 @@ const ManualLogModal: React.FC<ManualLogModalProps> = ({ isOpen, onClose, onLog 
                         type="button"
                         onClick={handleAnalyze}
                         disabled={!query.trim() || isLoading}
-                        className="order-1 sm:order-2 flex-grow h-12 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition disabled:bg-slate-400 flex items-center justify-center gap-2"
+                        className="order-1 sm:order-2 flex-grow h-14 bg-primary-600 text-white font-black rounded-2xl hover:bg-primary-700 transition disabled:bg-slate-300 flex items-center justify-center gap-2 shadow-lg shadow-primary-200"
                       >
                         {isLoading ? <Spinner /> : <><Wand2 size={20} /> נתח עם AI</>}
                       </motion.button>

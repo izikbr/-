@@ -37,6 +37,8 @@ import FastingTracker from './FastingTracker';
 import { FastingEntry } from '../types';
 
 
+import MobileNav from './MobileNav';
+
 interface DashboardProps {
   userProfile: UserProfile;
   onUpdateProfile: (updatedData: Partial<UserProfile>) => void;
@@ -62,6 +64,7 @@ const formatDateDisplay = (dateStr: string) => {
 
 const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onUpdateFoodLog, onUpdateFastingLog, onAddWeight }) => {
   const [activeModal, setActiveModal] = useState<null | 'image' | 'manual' | 'updateProfile' | 'updateTimeline' | 'editFoodItem' | 'fasting'>(null);
+  const [activeMobileTab, setActiveMobileTab] = useState('dashboard');
   const [editingFoodItem, setEditingFoodItem] = useState<FoodItem | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentWeightInput, setCurrentWeightInput] = useState<string>('');
@@ -349,22 +352,22 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4 text-center">
+          <Card delay={1} className="p-4 text-center">
               <p className="text-sm text-slate-500">BMI</p>
               <p className="text-3xl font-bold text-slate-800">{bmi.toFixed(1)}</p>
               <p className={`text-sm font-semibold ${bmiCategory.color}`}>{bmiCategory.text}</p>
           </Card>
-          <Card className={`p-4 text-center ${userProfile.goal === Goal.Lose ? 'cursor-pointer hover:bg-slate-100 transition' : ''}`} onClick={() => userProfile.goal === Goal.Lose && setActiveModal('updateTimeline')}>
+          <Card delay={2} className={`p-4 text-center ${userProfile.goal === Goal.Lose ? 'cursor-pointer hover:bg-slate-100 transition' : ''}`} onClick={() => userProfile.goal === Goal.Lose && setActiveModal('updateTimeline')}>
               <p className="text-sm text-slate-500">יעד קלורי</p>
               <p className="text-3xl font-bold text-slate-800">{dailyCalories.toLocaleString()}</p>
               <p className="text-sm text-slate-500">קלוריות</p>
           </Card>
-           <Card className="p-4 text-center">
+           <Card delay={3} className="p-4 text-center">
               <p className="text-sm text-slate-500">נצרך</p>
               <p className="text-3xl font-bold text-slate-800">{Math.round(consumed.calories).toLocaleString()}</p>
               <p className="text-sm text-slate-500">קלוריות</p>
           </Card>
-          <Card className="p-4 text-center">
+          <Card delay={4} className="p-4 text-center">
               <p className="text-sm text-slate-500">נותר</p>
               <p className="text-3xl font-bold text-primary-600">{Math.round(dailyCalories - consumed.calories).toLocaleString()}</p>
               <p className="text-sm text-slate-500">קלוריות</p>
@@ -373,30 +376,35 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-            <Card>
+            <Card delay={5}>
                 <div className="p-6">
                     <h3 className="text-xl font-bold text-slate-800 mb-4">סיכום יומי</h3>
                     <div className="relative h-4 bg-slate-200 rounded-full overflow-hidden mb-6">
-                        <div className="absolute top-0 left-0 h-full bg-primary-500" style={{width: `${Math.min(100, (consumed.calories / dailyCalories) * 100)}%`}}></div>
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${Math.min(100, (consumed.calories / dailyCalories) * 100)}%` }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                          className="absolute top-0 left-0 h-full bg-primary-500" 
+                        />
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-center">
-                         <div>
-                            <p className="font-semibold text-slate-600">חלבון</p>
+                         <div className="group">
+                            <p className="font-semibold text-slate-600 group-hover:text-primary-600 transition-colors">חלבון</p>
                             <p className="text-lg font-bold text-slate-800">{Math.round(consumed.protein)}<span className="text-sm text-slate-500"> / {dailyProtein}g</span></p>
                         </div>
-                        <div>
-                            <p className="font-semibold text-slate-600">פחמימות</p>
+                        <div className="group">
+                            <p className="font-semibold text-slate-600 group-hover:text-primary-600 transition-colors">פחמימות</p>
                             <p className="text-lg font-bold text-slate-800">{Math.round(consumed.carbs)}<span className="text-sm text-slate-500"> / {dailyCarbs}g</span></p>
                         </div>
-                        <div>
-                            <p className="font-semibold text-slate-600">שומן</p>
+                        <div className="group">
+                            <p className="font-semibold text-slate-600 group-hover:text-primary-600 transition-colors">שומן</p>
                             <p className="text-lg font-bold text-slate-800">{Math.round(consumed.fat)}<span className="text-sm text-slate-500"> / {dailyFat}g</span></p>
                         </div>
                     </div>
                 </div>
             </Card>
 
-            <Card>
+            <Card delay={6}>
               <div className="p-6">
                   <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <History size={20} className="text-primary-500" /> היומן שלי
@@ -452,41 +460,53 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
         </div>
         
         <div className="space-y-6">
-            <Card>
+            <Card delay={7}>
                 <div className="p-6">
                     <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
                       <Plus size={20} className="text-primary-500" /> הוספה ליומן
                     </h3>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+                    <div className="grid grid-cols-1 gap-3">
                         <motion.button 
+                          whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => setActiveModal('image')} 
-                          className="flex items-center sm:flex-col justify-center gap-3 sm:gap-2 p-4 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition shadow-sm border border-primary-100"
+                          className="flex items-center justify-between p-4 bg-primary-50 text-primary-700 rounded-2xl hover:bg-primary-100 transition shadow-sm border border-primary-100 group"
                         >
-                            <Camera size={24} />
-                            <span className="font-bold">צילום מזון</span>
+                            <div className="flex items-center gap-3">
+                             <div className="p-2 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform"><Camera size={24} /></div>
+                             <span className="font-bold">צילום מזון ב-AI</span>
+                            </div>
+                            <ChevronLeft size={20} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                         </motion.button>
                         <motion.button 
+                          whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => setActiveModal('manual')} 
-                          className="flex items-center sm:flex-col justify-center gap-3 sm:gap-2 p-4 bg-slate-50 text-slate-700 rounded-xl hover:bg-slate-100 transition shadow-sm border border-slate-200"
+                          className="flex items-center justify-between p-4 bg-slate-50 text-slate-700 rounded-2xl hover:bg-slate-100 transition shadow-sm border border-slate-200 group"
                         >
-                            <Edit2 size={24} />
-                            <span className="font-bold">הזנה ידנית</span>
+                            <div className="flex items-center gap-3">
+                             <div className="p-2 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform"><Edit2 size={24} /></div>
+                             <span className="font-bold">הזנה ידנית חכמה</span>
+                            </div>
+                            <ChevronLeft size={20} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                         </motion.button>
                         <motion.button 
+                          whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => setActiveModal('fasting')} 
-                          className="flex items-center sm:flex-col justify-center gap-3 sm:gap-2 p-4 bg-amber-50 text-amber-700 rounded-xl hover:bg-amber-100 transition shadow-sm border border-amber-200"
+                          className="flex items-center justify-between p-4 bg-amber-50 text-amber-700 rounded-2xl hover:bg-amber-100 transition shadow-sm border border-amber-200 group"
                         >
-                            <Clock size={24} />
-                            <span className="font-bold">דיווח צום</span>
+                            <div className="flex items-center gap-3">
+                             <div className="p-2 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform"><Clock size={24} /></div>
+                             <span className="font-bold">דיווח צום</span>
+                            </div>
+                            <ChevronLeft size={20} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                         </motion.button>
                     </div>
                 </div>
             </Card>
             
-            <Card>
+            <Card delay={8}>
               <div className="p-4">
                    <button onClick={() => setActiveModal('updateProfile')} className="w-full text-center p-3 text-primary-600 font-semibold hover:bg-slate-100 rounded-md transition">
                       עדכן פרופיל
@@ -634,6 +654,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpdateProfile, onU
       <UpdateProfileModal isOpen={activeModal === 'updateProfile'} onClose={() => setActiveModal(null)} onUpdate={onUpdateProfile} userProfile={userProfile} />
       <UpdateGoalTimelineModal isOpen={activeModal === 'updateTimeline'} onClose={() => setActiveModal(null)} onUpdate={onUpdateProfile} userProfile={userProfile} />
       {editingFoodItem && <EditFoodItemModal isOpen={activeModal === 'editFoodItem'} onClose={() => { setEditingFoodItem(null); setActiveModal(null); }} onUpdate={handleUpdateItem} foodItem={editingFoodItem} />}
+      
+      <MobileNav 
+        activeTab={activeMobileTab} 
+        onTabChange={(tab) => {
+          setActiveMobileTab(tab);
+          if (tab === 'profile') setActiveModal('updateProfile');
+          // For other tabs, we could scroll to relevant sections
+        }} 
+        onAction={(action) => setActiveModal(action)} 
+      />
     </div>
   );
 };

@@ -1,4 +1,6 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Clock, Plus, Trash2, History } from 'lucide-react';
 import { FastingEntry } from '../types';
 import Card from './common/Card';
 import dayjs from 'dayjs';
@@ -21,51 +23,65 @@ const FastingTracker: React.FC<FastingTrackerProps> = ({ fastingLog, onDelete, o
   };
 
   return (
-    <Card className="flex flex-col h-full">
-      <div className="p-6 flex-grow">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-slate-800">צום לסירוגין</h3>
-          <button 
+    <Card className="flex flex-col h-full overflow-hidden">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <Clock size={22} className="text-amber-500" /> צום לסירוגין
+          </h3>
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={onAdd}
-            className="text-sm bg-primary-50 text-primary-600 px-3 py-1.5 rounded-full font-semibold hover:bg-primary-100 transition"
+            className="flex items-center gap-1.5 text-sm bg-primary-50 text-primary-700 px-4 py-2 rounded-full font-bold hover:bg-primary-100 transition shadow-sm border border-primary-100"
           >
-            + דווח צום
-          </button>
+            <Plus size={16} /> דווח צום
+          </motion.button>
         </div>
 
         {sortedLog.length > 0 ? (
-          <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-            {sortedLog.map((entry) => (
-              <div key={entry.id} className="p-3 border border-slate-100 rounded-lg bg-slate-50 relative group">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-bold text-slate-700">
-                      {dayjs(entry.startTime).format('DD/MM/YYYY')}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {dayjs(entry.startTime).format('HH:mm')} - {dayjs(entry.endTime).format('HH:mm')}
-                    </p>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-primary-600">
-                      {calculateDuration(entry.startTime, entry.endTime)}
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => onDelete(entry.id)}
-                  className="absolute -top-2 -left-2 bg-white text-red-500 p-1 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="מחק"
+          <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+            <AnimatePresence mode="popLayout">
+              {sortedLog.map((entry) => (
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  key={entry.id} 
+                  className="p-4 border border-slate-100 rounded-2xl bg-slate-50 relative group hover:bg-white hover:shadow-md transition-all"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-              </div>
-            ))}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-bold text-slate-700">
+                        {dayjs(entry.startTime).format('DD/MM/YYYY')}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium">
+                        {dayjs(entry.startTime).format('HH:mm')} - {dayjs(entry.endTime).format('HH:mm')}
+                      </p>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-black text-amber-600">
+                        {calculateDuration(entry.startTime, entry.endTime)}
+                      </p>
+                    </div>
+                  </div>
+                  <motion.button 
+                    whileTap={{ scale: 0.8 }}
+                    onClick={() => onDelete(entry.id)}
+                    className="absolute -top-1 -left-1 bg-white text-red-500 p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity border border-red-50"
+                    title="מחק"
+                  >
+                    <Trash2 size={14} />
+                  </motion.button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         ) : (
-          <div className="text-center py-8 text-slate-500">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-2 opacity-30"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            <p className="text-sm">טרם נרשמו צומות.</p>
+          <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <History size={48} className="mx-auto mb-3 opacity-20" />
+            <p className="text-sm font-medium">טרם נרשמו צומות.</p>
           </div>
         )}
       </div>

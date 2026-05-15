@@ -1,13 +1,15 @@
+console.log("Starting server script...");
+
 import express from "express";
 import path from "path";
 import cors from "cors";
 import multer from "multer";
 import { GoogleGenAI, Type } from "@google/genai";
-import { createServer as createViteServer } from "vite";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 async function startServer() {
+  console.log("Initializing Express application...");
   const app = express();
   const PORT = 3000;
 
@@ -15,6 +17,8 @@ async function startServer() {
   app.use(express.json());
 
   const apiKey = process.env.GEMINI_API_KEY;
+  console.log("Checking Gemini API key:", apiKey ? "Present" : "Missing");
+  
   const ai = apiKey ? new GoogleGenAI({ 
     apiKey,
     httpOptions: {
@@ -27,6 +31,7 @@ async function startServer() {
   // Middleware to check if AI is initialized
   const checkAI = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (!ai) {
+      console.warn("AI check failed: Gemini API key is missing.");
       return res.status(500).json({ error: "Gemini API key is missing on the server." });
     }
     next();
@@ -34,8 +39,10 @@ async function startServer() {
 
   // API Routes
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", ai_ready: !!ai });
+    res.json({ status: "ok", ai_ready: !!ai, env: process.env.NODE_ENV });
   });
+
+  // ... (nutrition/text, nutrition/image, suggestions, insights routes remain the same)
 
   app.post("/api/nutrition/text", checkAI, async (req, res) => {
     const { query } = req.body;
@@ -143,16 +150,27 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.resolve(process.cwd(), 'dist');
+    const indexPath = path.join(distPath, 'index.html');
+    
+    console.log("Production mode: serving static files from", distPath);
+    
     app.use(express.static(distPath));
+    
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error("Error sending index.html:", err);
+          res.status(404).send("Application shell not found. Please wait for build to complete.");
+        }
+      });
     });
   }
 

@@ -8,17 +8,21 @@ export const getNutritionInfoFromText = async (query: string): Promise<Omit<Food
   });
 
   if (!response.ok) {
-    let errorMessage = `Server error: ${response.status} (Text Nutrition)`;
+    let errorMessage = `שגיאת שרת: ${response.status}`;
     try {
       const text = await response.text();
       try {
         const errorData = JSON.parse(text);
-        if (errorData && errorData.error) errorMessage = errorData.error;
+        if (errorData && errorData.error) {
+          errorMessage = errorData.error;
+        } else {
+          errorMessage += ` - ${text.substring(0, 50)}`;
+        }
       } catch (e) {
-        console.warn("Response not JSON:", text.substring(0, 100));
+        errorMessage += ` - ${text.substring(0, 50)}`;
       }
     } catch (e) {
-      console.error("Failed to read response body");
+      errorMessage += " (לא ניתן לקרוא את גוף התגובה)";
     }
     throw new Error(errorMessage);
   }
@@ -44,17 +48,21 @@ export const getFoodFromImage = async (imageFile: File): Promise<Omit<FoodItem, 
     });
 
     if (!response.ok) {
-      let errorMessage = `Server error: ${response.status} (Image Nutrition)`;
+      let errorMessage = `שגיאת שרת: ${response.status}`;
       try {
         const text = await response.text();
         try {
           const errorData = JSON.parse(text);
-          if (errorData && errorData.error) errorMessage = errorData.error;
+          if (errorData && errorData.error) {
+            errorMessage = errorData.error;
+          } else {
+            errorMessage += ` - ${text.substring(0, 50)}`;
+          }
         } catch (e) {
-          console.warn("Response not JSON:", text.substring(0, 100));
+          errorMessage += ` - ${text.substring(0, 50)}`;
         }
       } catch (e) {
-        console.error("Failed to read response body");
+        errorMessage += " (לא ניתן לקרוא את גוף התגובה)";
       }
       throw new Error(errorMessage);
     }
@@ -81,17 +89,21 @@ export const getMealSuggestions = async (query: string): Promise<string> => {
   });
 
   if (!response.ok) {
-    let errorMessage = `Server error: ${response.status} (Suggestions)`;
+    let errorMessage = `שגיאת שרת: ${response.status}`;
     try {
       const text = await response.text();
       try {
         const errorData = JSON.parse(text);
-        if (errorData && errorData.error) errorMessage = errorData.error;
+        if (errorData && errorData.error) {
+          errorMessage = errorData.error;
+        } else {
+          errorMessage += ` - ${text.substring(0, 50)}`;
+        }
       } catch (e) {
-        console.warn("Response not JSON:", text.substring(0, 100));
+        errorMessage += ` - ${text.substring(0, 50)}`;
       }
     } catch (e) {
-      console.error("Failed to read response body");
+      errorMessage += " (לא ניתן לקרוא את גוף התגובה)";
     }
     throw new Error(errorMessage);
   }
@@ -107,17 +119,21 @@ export const getWeeklyInsights = async (summary: string): Promise<string> => {
   });
 
   if (!response.ok) {
-    let errorMessage = `Server error: ${response.status} (Insights)`;
+    let errorMessage = `שגיאת שרת: ${response.status}`;
     try {
       const text = await response.text();
       try {
         const errorData = JSON.parse(text);
-        if (errorData && errorData.error) errorMessage = errorData.error;
+        if (errorData && errorData.error) {
+          errorMessage = errorData.error;
+        } else {
+          errorMessage += ` - ${text.substring(0, 50)}`;
+        }
       } catch (e) {
-        console.warn("Response not JSON:", text.substring(0, 100));
+        errorMessage += ` - ${text.substring(0, 50)}`;
       }
     } catch (e) {
-      console.error("Failed to read response body");
+      errorMessage += " (לא ניתן לקרוא את גוף התגובה)";
     }
     throw new Error(errorMessage);
   }

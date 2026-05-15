@@ -16,9 +16,9 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
-  // Request logger for debugging
+  // Request logger for debugging - moved to top
   app.use((req, res, next) => {
-    console.log(`${req.method} ${req.url}`);
+    console.log(`[Request Log] ${new Date().toISOString()} ${req.method} ${req.url}`);
     next();
   });
 
@@ -38,47 +38,42 @@ async function startServer() {
   const checkAI = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (!ai) {
       console.warn("AI check failed: Gemini API key is missing.");
-      return res.status(500).json({ error: "Gemini API key is missing on the server." });
+      return res.status(500).json({ error: "Gemini API key is missing on the server. Please check your environment variables." });
     }
     next();
   };
 
-  // API Routes
-  const apiRouter = express.Router();
-
-  apiRouter.get("/health", (req, res) => {
+  // API Health Checks
+  app.get("/api/health", (req, res) => {
+    console.log("[Health Check] API is hit");
     res.json({ 
       status: "ok", 
       ai_ready: !!ai, 
-      env: process.env.NODE_ENV,
-      version: "1.0.1" 
+      time: new Date().toISOString()
     });
   });
 
-  apiRouter.get("/test", (req, res) => {
-    res.json({ message: "API is working" });
-  });
-
-  apiRouter.post("/nutrition/text", checkAI, async (req, res) => {
+  // Nutrition Text Route
+  app.post("/api/nutrition/text", checkAI, async (req, res) => {
     const { query } = req.body;
-    console.log(`[AI Nutrition] Request received: "${query}"`);
+    console.log(`[AI Nutrition Text] Query: "${query}"`);
     
     if (!query || typeof query !== 'string') {
-      return res.status(400).json({ error: "Invalid query" });
+      console.warn("[AI Nutrition Text] Missing or invalid query");
+      return res.status(400).json({ error: "Missing food description" });
     }
 
     try {
-      console.log(`[AI Nutrition] Calling Gemini API for: "${query}"...`);
       const response = await ai!.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Analyze this food description in Hebrew: "${query}". Estimate calories, protein, carbs, and fat for the whole portion described.`,
+        contents: `Analyze this food: "${query}". Estimate per-portion nutrition.`,
         config: {
-          systemInstruction: "Analyze the food and provide nutritional estimates. Important: ALWAYS provide a name for the food in the 'name' field (Hebrew). If description is vague, use standard portions. If you don't know what it is, return 0s but make sure 'name' is not empty.",
+          systemInstruction: "Return JSON: {name, calories, protein, carbs, fat}. Use Hebrew for name.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              name: { type: Type.STRING, description: "Food name in Hebrew" },
+              name: { type: Type.STRING },
               calories: { type: Type.NUMBER },
               protein: { type: Type.NUMBER },
               carbs: { type: Type.NUMBER },
@@ -89,47 +84,23 @@ async function startServer() {
         },
       });
 
-      const text = response.text;
-      console.log(`[AI Nutrition] Raw text response: "${text}"`);
-
-      if (!text) {
-        throw new Error("AI returned empty response (possibly filtered)");
-      }
-
-      let parsedData;
-      try {
-        let cleanedText = text.trim();
-        if (cleanedText.startsWith('```')) {
-          cleanedText = cleanedText.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-        }
-        parsedData = JSON.parse(cleanedText);
-      } catch (parseError) {
-        console.error("[AI Nutrition] JSON Parse Error:", parseError, "Text was:", text);
-        throw new Error("Failed to parse AI response as JSON");
-      }
-      
-      // Ensure name is never empty
-      if (!parsedData.name || parsedData.name.trim() === "") {
-        parsedData.name = query;
-      }
-      
-      console.log(`[AI Nutrition] Success:`, parsedData);
-      res.json(parsedData);
+      const data = JSON.parse(response.text.trim());
+      console.log("[AI Nutrition Text] Success:", data.name);
+      res.json(data);
     } catch (error: any) {
-      console.error("[AI Nutrition] Error:", error);
-      const statusCode = error.status || 500;
-      const message = error.message || "Failed to analyze text";
-      res.status(statusCode).json({ error: message });
+      console.error("[AI Nutrition Text] Error:", error);
+      res.status(500).json({ error: "ניתוח הטקסט נכשל. נסה שוב או הזן ידנית." });
     }
   });
 
-  apiRouter.post("/nutrition/image", upload.single('image'), checkAI, async (req, res) => {
+  // Nutrition Image Route
+  app.post("/api/nutrition/image", upload.single('image'), checkAI, async (req, res) => {
     if (!req.file) {
-      console.warn("[AI Image] No image uploaded");
+      console.warn("[AI Nutrition Image] No image uploaded");
       return res.status(400).json({ error: "No image uploaded" });
     }
 
-    console.log(`[AI Image] Processing image: ${req.file.originalname} (${req.file.size} bytes)`);
+    console.log(`[AI Nutrition Image] File received: ${req.file.originalname}`);
 
     try {
       const response = await ai!.models.generateContent({
@@ -137,18 +108,18 @@ async function startServer() {
         contents: {
           parts: [
             { inlineData: { data: req.file.buffer.toString('base64'), mimeType: req.file.mimetype } },
-            { text: "Identify all distinct food items in this image and estimate their nutrition per serving." }
+            { text: "Identify food items." }
           ]
         },
         config: {
-          systemInstruction: "Analyze the image and provide a JSON array of food items. For each, give Hebrew name and nutritional estimates.",
+          systemInstruction: "Return JSON array of {name, calories, protein, carbs, fat} in Hebrew.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.ARRAY,
             items: {
               type: Type.OBJECT,
               properties: {
-                name: { type: Type.STRING, description: "Food name in Hebrew" },
+                name: { type: Type.STRING },
                 calories: { type: Type.NUMBER },
                 protein: { type: Type.NUMBER },
                 carbs: { type: Type.NUMBER },
@@ -160,81 +131,63 @@ async function startServer() {
         },
       });
 
-      const text = response.text;
-      console.log(`[AI Image] Raw text response: "${text}"`);
-
-      if (!text) {
-        throw new Error("AI returned empty response for image");
-      }
-
-      let data;
-      try {
-        let cleaned = text.trim();
-        if (cleaned.startsWith('```')) {
-          cleaned = cleaned.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-        }
-        data = JSON.parse(cleaned);
-      } catch (parseErr) {
-        console.error("[AI Image] JSON Parse Error:", parseErr, "Text:", text);
-        throw new Error("Failed to parse AI image response");
-      }
-
-      console.log(`[AI Image] Successfully identified ${Array.isArray(data) ? data.length : 0} items`);
+      const data = JSON.parse(response.text.trim());
+      console.log(`[AI Nutrition Image] Success: identified ${data.length} items`);
       res.json(data);
     } catch (error: any) {
-      console.error("[AI Image] Error:", error);
-      const statusCode = error.status || 500;
-      const message = error.message || "Failed to analyze image";
-      res.status(statusCode).json({ error: message });
+      console.error("[AI Nutrition Image] Error:", error);
+      res.status(500).json({ error: "ניתוח התמונה נכשל. נסה שוב." });
     }
   });
 
-  apiRouter.post("/suggestions", checkAI, async (req, res) => {
+  // Suggestions Route
+  app.post("/api/suggestions", checkAI, async (req, res) => {
     const { query } = req.body;
+    console.log(`[AI Suggestions] Request: "${query}"`);
     try {
       const response = await ai!.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `הצע ארוחות בריאות בהתבסס על הבקשה הבאה: ${query}`,
+        contents: `הצע ארוחות בריאות: ${query}`,
         config: {
-          systemInstruction: "אתה שף ותזונאי יצירתי. ספק 3 הצעות לארוחות בעברית עם רשימת רכיבים והוראות פשוטות. השתמש בפורמט Markdown.",
+          systemInstruction: "אתה שף ותזונאי. ספק 3 הצעות בעברית ב-Markdown.",
         }
       });
       res.json({ text: response.text });
     } catch (error) {
+      console.error("[AI Suggestions] Error:", error);
       res.status(500).json({ error: "Failed to get suggestions" });
     }
   });
 
-  apiRouter.post("/insights", checkAI, async (req, res) => {
+  // Insights Route
+  app.post("/api/insights", checkAI, async (req, res) => {
     const { summary } = req.body;
+    console.log("[AI Insights] Generating insights...");
     try {
       const response = await ai!.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `נתח את סיכום יומן המזון של המשתמש ל-7 הימים האחרונים: ${summary}`,
+        contents: `נתח יומן מזון: ${summary}`,
         config: {
-          systemInstruction: "אתה מאמן תזונה חיובי ומעודד. ספק תובנה חיובית אחת, אזור אחד לשיפור וטיפ אחד פשוט ובר ביצוע. השב בעברית בפורמט Markdown.",
+          systemInstruction: "ספק תובנות תזונה בעברית ב-Markdown.",
         }
       });
       res.json({ text: response.text });
     } catch (error) {
+      console.error("[AI Insights] Error:", error);
       res.status(500).json({ error: "Failed to get insights" });
     }
   });
 
-  // Mount API router
-  app.use("/api", apiRouter);
-
   // Catch-all for UNHANDLED API routes
   app.all("/api/*", (req, res) => {
-    console.warn(`404 at API route: ${req.method} ${req.url}`);
+    console.warn(`[404 API] ${req.method} ${req.originalUrl}`);
     res.status(404).json({ 
       error: "API endpoint not found", 
-      path: req.originalUrl,
-      method: req.method 
+      path: req.originalUrl
     });
   });
 
-  // Vite middleware for development
+  // Vite/Production middleware - handles EVERYTHING ELSE
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
